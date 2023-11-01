@@ -1,0 +1,68 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - master  
+
+permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+  
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2  # Checks out your repository's code
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE }}
+        #role-session-name: samplerolesession
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 0.15.5  #  Specify the Terraform version you want to use
+
+    - name: Initialize Terraform
+      run: terraform init
+      working-directory: "./Terraform/modules"
+
+    - name: apply Terraform Changes
+      run: terraform apply -auto-approve
+      working-directory: "./Terraform/modules"
+
+
+
+  proddeploy:
+    runs-on: ubuntu-latest
+    needs: deploy
+  
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2  # Checks out your repository's code
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE }}
+        #role-session-name: samplerolesession
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 0.15.5  #  Specify the Terraform version you want to use
+
+    - name: Initialize Terraform
+      run: terraform init
+      working-directory: "./Terraform/modulesprod"
+
+    - name: apply Terraform Changes
+      run: terraform apply -auto-approve
+      working-directory: "./Terraform/modulesprod"
